@@ -12,12 +12,12 @@ public class MoveCostTooltip : MonoBehaviour
         Hide();
     }
 
-    public void Show(int cost, Vector3 worldPos, Camera cam)
+    public void Show(int cost, Vector3 worldPos, Camera cam, int remaining)
     {
         if (cam == null || text == null) return;
 
         // Update label
-        text.text = $"Cost: {cost}";
+        text.text = $"Cost: {cost} ({remaining} left)";
 
         // Position near the hovered tile (screen space)
         Vector3 screen = cam.WorldToScreenPoint(worldPos);

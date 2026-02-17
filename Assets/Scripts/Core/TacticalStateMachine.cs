@@ -53,6 +53,8 @@ public class TacticalStateMachine : MonoBehaviour
 
         rangeHighlighter.Clear();
         pathPreview.Clear();
+        Camera.main.GetComponentInParent<TacticalCameraController>()
+            ?.FocusOn(grid.CoordToWorldCenter(unit.currentCoord));
 
         actionMenu.ShowForUnit(unit, this);
     }
@@ -105,7 +107,7 @@ public class TacticalStateMachine : MonoBehaviour
 
         
         if (costSoFar.TryGetValue(coord, out int cost))
-            moveCostTooltip.Show(cost, grid.CoordToWorldCenter(coord), Camera.main);
+            moveCostTooltip.Show(cost, grid.CoordToWorldCenter(coord), Camera.main, SelectedUnit.movePoints - cost);
         else
             moveCostTooltip.Hide();
     }
