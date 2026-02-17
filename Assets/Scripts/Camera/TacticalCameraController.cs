@@ -8,10 +8,11 @@ public class TacticalCameraController : MonoBehaviour
     [SerializeField] private float edgeScrollSize = 15f;
     [SerializeField] private float smoothTime = 0.1f;
 
-    [Header("Zoom")]
+    [Header("Zoom (boom distance)")]
+    [SerializeField] private Transform cameraTransform; // assign Main Camera transform
     [SerializeField] private float zoomSpeed = 10f;
-    [SerializeField] private float minZoom = 8f;
-    [SerializeField] private float maxZoom = 25f;
+    [SerializeField] private float minDistance = 10f;  // closest (smaller magnitude)
+    [SerializeField] private float maxDistance = 30f;  // farthest
 
     [Header("Bounds")]
     [SerializeField] private GridManager grid;
@@ -19,10 +20,18 @@ public class TacticalCameraController : MonoBehaviour
 
     private Vector3 targetPosition;
     private Vector3 velocity;
+    private float targetDistance = 20f;
 
     void Start()
     {
         targetPosition = transform.position;
+
+        if (cameraTransform == null)
+            cameraTransform = Camera.main != null ? Camera.main.transform : null;
+
+        // Initialize distance from current local position if possible
+        if (cameraTransform != null)
+            targetDistance = Mathf.Abs(cameraTransform.localPosition.z);
     }
 
     void Update()
@@ -30,13 +39,15 @@ public class TacticalCameraController : MonoBehaviour
         HandleMovement();
         HandleZoom();
 
-        // Smooth movement
-        transform.position = Vector3.SmoothDamp(
-            transform.position,
-            targetPosition,
-            ref velocity,
-            smoothTime
-        );
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
+
+        // Apply zoom (camera local Z is negative)
+        if (cameraTransform != null)
+        {
+            Vector3 lp = cameraTransform.localPosition;
+            lp.z = -targetDistance;
+            cameraTransform.localPosition = lp;
+        }
     }
 
     void HandleMovement()
@@ -56,20 +67,20 @@ public class TacticalCameraController : MonoBehaviour
         if (Mouse.current != null)
         {
             Vector2 mousePos = Mouse.current.position.ReadValue();
-            float screenWidth = Screen.width;
-            float screenHeight = Screen.height;
+            float w = Screen.width;
+            float h = Screen.height;
 
             if (mousePos.x < edgeScrollSize) input += Vector3.left;
-            if (mousePos.x > screenWidth - edgeScrollSize) input += Vector3.right;
+            if (mousePos.x > w - edgeScrollSize) input += Vector3.right;
             if (mousePos.y < edgeScrollSize) input += Vector3.back;
-            if (mousePos.y > screenHeight - edgeScrollSize) input += Vector3.forward;
+            if (mousePos.y > h - edgeScrollSize) input += Vector3.forward;
         }
 
         if (input != Vector3.zero)
-{
+        {
             input.Normalize();
 
-            // Move relative to rig orientation (ignores vertical tilt)
+            // Move relative to rig orientation (ignoring tilt)
             Vector3 forward = transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = transform.right; right.y = 0f; right.Normalize();
 
@@ -78,11 +89,13 @@ public class TacticalCameraController : MonoBehaviour
 
             ClampToBounds();
         }
+
         // Middle mouse drag
         if (Mouse.current != null && Mouse.current.middleButton.isPressed)
         {
             Vector2 delta = Mouse.current.delta.ReadValue();
             targetPosition -= new Vector3(delta.x, 0, delta.y) * 0.02f;
+            ClampToBounds();
         }
     }
 
@@ -91,12 +104,10 @@ public class TacticalCameraController : MonoBehaviour
         if (Mouse.current == null) return;
 
         float scroll = Mouse.current.scroll.ReadValue().y;
+        if (Mathf.Abs(scroll) < 0.01f) return;
 
-        if (Mathf.Abs(scroll) > 0.01f)
-        {
-            targetPosition.y -= scroll * zoomSpeed * Time.deltaTime;
-            targetPosition.y = Mathf.Clamp(targetPosition.y, minZoom, maxZoom);
-        }
+        targetDistance -= scroll * zoomSpeed * Time.deltaTime;
+        targetDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
     }
 
     void ClampToBounds()
@@ -108,6 +119,9 @@ public class TacticalCameraController : MonoBehaviour
 
         targetPosition.x = Mathf.Clamp(targetPosition.x, -boundaryPadding, maxX + boundaryPadding);
         targetPosition.z = Mathf.Clamp(targetPosition.z, -boundaryPadding, maxZ + boundaryPadding);
+
+        // keep pivot on ground plane
+        targetPosition.y = 0f;
     }
 
     public void FocusOn(Vector3 worldPos)
