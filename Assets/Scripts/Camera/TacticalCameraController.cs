@@ -6,21 +6,38 @@ public class TacticalCameraController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 15f;
     [SerializeField] private float edgeScrollSize = 15f;
-    [SerializeField] private float smoothTime = 0.1f;
+
+    [Tooltip("General smoothing for free movement.")]
+    [SerializeField] private float smoothTime = 0.12f;
+
+    [Tooltip("Snappier smoothing used right after FocusOn().")]
+    [SerializeField] private float focusSmoothTime = 0.06f;
+
+    [Header("Rotation (Q/E snap)")]
+    [SerializeField] private float rotationSmoothTime = 0.10f;
+    [SerializeField] private float rotationStepDegrees = 90f;
 
     [Header("Zoom (boom distance)")]
     [SerializeField] private Transform cameraTransform; // assign Main Camera transform
     [SerializeField] private float zoomSpeed = 10f;
-    [SerializeField] private float minDistance = 10f;  // closest (smaller magnitude)
-    [SerializeField] private float maxDistance = 30f;  // farthest
+    [SerializeField] private float minDistance = 10f;
+    [SerializeField] private float maxDistance = 30f;
 
     [Header("Bounds")]
     [SerializeField] private GridManager grid;
     [SerializeField] private float boundaryPadding = 2f;
 
     private Vector3 targetPosition;
-    private Vector3 velocity;
+    private Vector3 positionVelocity;
+
+    private float targetYaw;
+    private float yawVelocity;
+
     private float targetDistance = 20f;
+
+    // When we recently called FocusOn, we use tighter smoothing for a moment
+    private float focusBoostTimer = 0f;
+    [SerializeField] private float focusBoostDuration = 0.25f;
 
     void Start()
     {
@@ -29,17 +46,38 @@ public class TacticalCameraController : MonoBehaviour
         if (cameraTransform == null)
             cameraTransform = Camera.main != null ? Camera.main.transform : null;
 
-        // Initialize distance from current local position if possible
         if (cameraTransform != null)
             targetDistance = Mathf.Abs(cameraTransform.localPosition.z);
+
+        targetYaw = transform.eulerAngles.y;
     }
 
     void Update()
     {
+        HandleRotationSnap();
         HandleMovement();
         HandleZoom();
 
-        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
+        // Choose smoothing time
+        float usedSmooth = (focusBoostTimer > 0f) ? focusSmoothTime : smoothTime;
+        if (focusBoostTimer > 0f) focusBoostTimer -= Time.deltaTime;
+
+        // Smooth position
+        transform.position = Vector3.SmoothDamp(
+            transform.position,
+            targetPosition,
+            ref positionVelocity,
+            usedSmooth
+        );
+
+        // Smooth rotation (yaw only)
+        float newYaw = Mathf.SmoothDampAngle(
+            transform.eulerAngles.y,
+            targetYaw,
+            ref yawVelocity,
+            rotationSmoothTime
+        );
+        transform.rotation = Quaternion.Euler(45f, newYaw, 0f); // keep fixed tilt at 45
 
         // Apply zoom (camera local Z is negative)
         if (cameraTransform != null)
@@ -48,6 +86,23 @@ public class TacticalCameraController : MonoBehaviour
             lp.z = -targetDistance;
             cameraTransform.localPosition = lp;
         }
+    }
+
+    void HandleRotationSnap()
+    {
+        if (Keyboard.current == null) return;
+
+        if (Keyboard.current.qKey.wasPressedThisFrame)
+        {
+            targetYaw -= rotationStepDegrees;
+        }
+        else if (Keyboard.current.eKey.wasPressedThisFrame)
+        {
+            targetYaw += rotationStepDegrees;
+        }
+
+        // keep in a nice range (not required, but tidy)
+        targetYaw = NormalizeAngle(targetYaw);
     }
 
     void HandleMovement()
@@ -80,7 +135,7 @@ public class TacticalCameraController : MonoBehaviour
         {
             input.Normalize();
 
-            // Move relative to rig orientation (ignoring tilt)
+            // Move relative to current yaw (ignoring tilt)
             Vector3 forward = transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = transform.right; right.y = 0f; right.Normalize();
 
@@ -94,7 +149,14 @@ public class TacticalCameraController : MonoBehaviour
         if (Mouse.current != null && Mouse.current.middleButton.isPressed)
         {
             Vector2 delta = Mouse.current.delta.ReadValue();
-            targetPosition -= new Vector3(delta.x, 0, delta.y) * 0.02f;
+
+            // Drag should respect camera yaw too
+            Vector3 forward = transform.forward; forward.y = 0f; forward.Normalize();
+            Vector3 right = transform.right; right.y = 0f; right.Normalize();
+
+            targetPosition -= right * (delta.x * 0.02f);
+            targetPosition -= forward * (delta.y * 0.02f);
+
             ClampToBounds();
         }
     }
@@ -120,7 +182,7 @@ public class TacticalCameraController : MonoBehaviour
         targetPosition.x = Mathf.Clamp(targetPosition.x, -boundaryPadding, maxX + boundaryPadding);
         targetPosition.z = Mathf.Clamp(targetPosition.z, -boundaryPadding, maxZ + boundaryPadding);
 
-        // keep pivot on ground plane
+        // pivot stays on ground plane
         targetPosition.y = 0f;
     }
 
@@ -129,5 +191,15 @@ public class TacticalCameraController : MonoBehaviour
         targetPosition.x = worldPos.x;
         targetPosition.z = worldPos.z;
         ClampToBounds();
+
+        // Make the next quarter-second feel snappier
+        focusBoostTimer = focusBoostDuration;
+    }
+
+    private static float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle < 0f) angle += 360f;
+        return angle;
     }
 }
