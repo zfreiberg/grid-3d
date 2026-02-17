@@ -78,13 +78,22 @@ public class TacticalStateMachine : MonoBehaviour
     }
 
     public void HoverTile(GridCoord coord)
-    {
-        if (State != TacticalState.ChoosingMove) return;
-        if (!reachable.Contains(coord)) { pathPreview.Clear(); return; }
+{
+    if (State != TacticalState.ChoosingMove) return;
 
-        var path = Pathfinding.ReconstructPath(cameFrom, SelectedUnit.currentCoord, coord);
-        pathPreview.ShowPath(grid, path);
+    if (!reachable.Contains(coord))
+    {
+        pathPreview.Clear();
+        rangeHighlighter.ClearHover();
+        return;
     }
+
+    rangeHighlighter.SetHover(coord);
+
+    var path = Pathfinding.ReconstructPath(cameFrom, SelectedUnit.currentCoord, coord);
+    pathPreview.ShowPath(grid, path);
+}
+
 
     public void ClickTile(GridCoord coord)
     {
@@ -93,6 +102,7 @@ public class TacticalStateMachine : MonoBehaviour
 
         // Commit move
         var path = Pathfinding.ReconstructPath(cameFrom, SelectedUnit.currentCoord, coord);
+        rangeHighlighter.ClearHover();
         StartCoroutine(MoveUnitRoutine(coord, path));
     }
 
@@ -125,6 +135,7 @@ public class TacticalStateMachine : MonoBehaviour
             pathPreview.Clear();
             actionMenu.ShowForUnit(SelectedUnit, this);
         }
+        rangeHighlighter.ClearHover();
     }
 
     public void Wait()
