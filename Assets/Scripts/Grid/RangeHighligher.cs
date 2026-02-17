@@ -6,25 +6,19 @@ public class RangeHighlighter : MonoBehaviour
     [SerializeField] private GridManager grid;
 
     private readonly HashSet<GridCoord> reachable = new();
-    private GridCoord? currentHover = null;
+    private readonly HashSet<GridCoord> path = new();
+    private GridCoord? hover = null;
 
     public void Clear()
     {
-        // Clear reachable
-        foreach (var c in reachable)
-        {
-            var view = grid.GetTileView(c);
-            if (view != null) view.SetReachable(false);
-        }
-        reachable.Clear();
-
-        // Clear hover
+        ClearReachable();
+        ClearPath();
         ClearHover();
     }
 
     public void ShowReachable(IEnumerable<GridCoord> coords)
     {
-        Clear();
+        ClearReachable();
 
         foreach (var c in coords)
         {
@@ -37,26 +31,59 @@ public class RangeHighlighter : MonoBehaviour
         }
     }
 
+    public void SetPath(IEnumerable<GridCoord> coords)
+    {
+        ClearPath();
+
+        foreach (var c in coords)
+        {
+            var view = grid.GetTileView(c);
+            if (view != null)
+            {
+                view.SetPath(true);
+                path.Add(c);
+            }
+        }
+    }
+
     public void SetHover(GridCoord? coord)
     {
         // Turn off old hover
-        if (currentHover.HasValue)
+        if (hover.HasValue)
         {
-            var oldView = grid.GetTileView(currentHover.Value);
+            var oldView = grid.GetTileView(hover.Value);
             if (oldView != null) oldView.SetHover(false);
         }
 
-        currentHover = coord;
+        hover = coord;
 
         // Turn on new hover
-        if (currentHover.HasValue)
+        if (hover.HasValue)
         {
-            var newView = grid.GetTileView(currentHover.Value);
+            var newView = grid.GetTileView(hover.Value);
             if (newView != null) newView.SetHover(true);
         }
     }
 
+    public void ClearPath()
+    {
+        foreach (var c in path)
+        {
+            var view = grid.GetTileView(c);
+            if (view != null) view.SetPath(false);
+        }
+        path.Clear();
+    }
+
     public void ClearHover() => SetHover(null);
 
-    public bool IsReachable(GridCoord c) => reachable.Contains(c);
+    private void ClearReachable()
+    {
+        foreach (var c in reachable)
+        {
+            var view = grid.GetTileView(c);
+            if (view != null) view.SetReachable(false);
+        }
+        reachable.Clear();
+    }
 }

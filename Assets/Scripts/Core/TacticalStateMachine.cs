@@ -78,21 +78,25 @@ public class TacticalStateMachine : MonoBehaviour
     }
 
     public void HoverTile(GridCoord coord)
-{
-    if (State != TacticalState.ChoosingMove) return;
-
-    if (!reachable.Contains(coord))
     {
-        pathPreview.Clear();
-        rangeHighlighter.ClearHover();
-        return;
+        if (State != TacticalState.ChoosingMove) return;
+
+        if (!reachable.Contains(coord))
+        {
+            pathPreview.Clear();
+            rangeHighlighter.ClearPath();
+            rangeHighlighter.ClearHover();
+            return;
+        }
+
+        var path = Pathfinding.ReconstructPath(cameFrom, SelectedUnit.currentCoord, coord);
+
+        // Highlight entire path and destination
+        rangeHighlighter.SetPath(path);
+        rangeHighlighter.SetHover(coord);
+
+        pathPreview.ShowPath(grid, path);
     }
-
-    rangeHighlighter.SetHover(coord);
-
-    var path = Pathfinding.ReconstructPath(cameFrom, SelectedUnit.currentCoord, coord);
-    pathPreview.ShowPath(grid, path);
-}
 
 
     public void ClickTile(GridCoord coord)
@@ -111,6 +115,8 @@ public class TacticalStateMachine : MonoBehaviour
         State = TacticalState.Moving;
 
         rangeHighlighter.Clear();
+        rangeHighlighter.ClearPath();
+        rangeHighlighter.ClearHover();
 
         // Convert to world points
         var worldPts = new List<Vector3>(path.Count);
@@ -135,6 +141,7 @@ public class TacticalStateMachine : MonoBehaviour
             pathPreview.Clear();
             actionMenu.ShowForUnit(SelectedUnit, this);
         }
+        rangeHighlighter.ClearPath();
         rangeHighlighter.ClearHover();
     }
 
