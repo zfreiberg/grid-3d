@@ -29,8 +29,6 @@ public class TacticalStateMachine : MonoBehaviour
 
     void Start()
     {
-        foreach (var u in FindObjectsOfType<Unit>())
-            turnManager.RegisterAlly(u);
 
         turnManager.Begin();
 

@@ -6,6 +6,11 @@ public enum MoveType
     Mounted,
     Flying
 }
+public enum Team
+{
+    Player,
+    Enemy
+}
 
 public class Unit : MonoBehaviour
 {
@@ -16,9 +21,16 @@ public class Unit : MonoBehaviour
     [Header("Runtime")]
     public GridCoord currentCoord;
     public bool hasActed;
+    [SerializeField] private Team team = Team.Player;
+    public Team Team => team;
+    public bool IsPlayer => team == Team.Player;
 
     public void SetCoord(GridCoord coord)
     {
         currentCoord = coord;
+    }
+    public void SetTeam(Team newTeam)
+    {
+        team = newTeam;
     }
 }
