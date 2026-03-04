@@ -17,15 +17,15 @@ MonoBehaviour:
   allyMaterial: {fileID: 2100000, guid: c697015e19e9a7049acb646ffa2e5320, type: 2}
   enemyMaterial: {fileID: 2100000, guid: cf6d417555fbfed478e85c08e5185c2e, type: 2}
   baseStats:
-    maxHP: 10
+    maxHP: 18
     move: 6
     str: 10
-    mag: 10
-    skill: 10
-    spd: 10
+    mag: 0
+    skill: 5
+    spd: 5
     def: 10
-    res: 10
-    luck: 10
+    res: 2
+    luck: 5
     crit: 0
     hit: 0
     avoid: 0
