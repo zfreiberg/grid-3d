@@ -2,93 +2,67 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
+
 public class UnitView : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 4f;
 
     [Header("Visuals")]
-    [SerializeField] private Transform visualRoot; // assign in prefab, or it will use/create "Visual"
-    [SerializeField] private bool applyTeamMaterialToAllRenderers = true;
+    [SerializeField] private Transform visualRoot; // optional: assign, otherwise finds/creates "Visual"
 
     private Unit unit;
-    private GameObject currentVisualInstance;
+    private GameObject visualInstance;
+
+#if UNITY_EDITOR
+    private bool refreshQueued;
+#endif
 
     private void Awake()
     {
         unit = GetComponent<Unit>();
         EnsureVisualRoot();
-        RefreshVisuals();
+        RefreshVisualsImmediate();
     }
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        // Avoid doing Instantiate/Destroy inside OnValidate.
         unit = GetComponent<Unit>();
         EnsureVisualRoot();
-        RefreshVisuals();
+        QueueEditorRefresh();
+    }
+
+    private void QueueEditorRefresh()
+    {
+
+        if (Application.isPlaying) return;
+        if (refreshQueued) return;
+
+        refreshQueued = true;
+        EditorApplication.delayCall += () =>
+        {
+            refreshQueued = false;
+            if (this == null) return;          // object may have been deleted
+            if (!gameObject) return;
+            RefreshVisualsImmediate();
+        };
     }
 #endif
-
-    public void RefreshVisuals()
-    {
-        if (unit == null || unit.Definition == null) return;
-        if (unit.Definition.visualPrefab == null) return;
-
-        // If prefab already matches, you could skip, but simplest is just rebuild
-        if (currentVisualInstance != null)
-        {
-#if UNITY_EDITOR
-            if (!Application.isPlaying) DestroyImmediate(currentVisualInstance);
-            else Destroy(currentVisualInstance);
-#else
-            Destroy(currentVisualInstance);
-#endif
-        }
-
-        currentVisualInstance = Instantiate(unit.Definition.visualPrefab, visualRoot);
-        currentVisualInstance.transform.localPosition = Vector3.zero;
-        currentVisualInstance.transform.localRotation = Quaternion.identity;
-        currentVisualInstance.transform.localScale = Vector3.one;
-
-        ApplyTeamMaterial();
-    }
-
-    private void ApplyTeamMaterial()
-    {
-        if (unit == null || unit.Definition == null) return;
-
-        Material teamMat = unit.Team == Team.Player
-            ? unit.Definition.allyMaterial
-            : unit.Definition.enemyMaterial;
-
-        if (teamMat == null) return;
-
-        if (!applyTeamMaterialToAllRenderers)
-        {
-            // Only apply to the first renderer found
-            var r = currentVisualInstance != null
-                ? currentVisualInstance.GetComponentInChildren<Renderer>(true)
-                : null;
-
-            if (r != null) r.sharedMaterial = teamMat;
-            return;
-        }
-
-        if (currentVisualInstance == null) return;
-
-        foreach (var r in currentVisualInstance.GetComponentsInChildren<Renderer>(true))
-            r.sharedMaterial = teamMat;
-    }
 
     private void EnsureVisualRoot()
     {
         if (visualRoot != null) return;
 
-        var existing = transform.Find("Visual");
-        if (existing != null)
+        var t = transform.Find("Visual");
+        if (t != null)
         {
-            visualRoot = existing;
+            visualRoot = t;
             return;
         }
 
@@ -97,6 +71,80 @@ public class UnitView : MonoBehaviour
         go.transform.localPosition = Vector3.zero;
         go.transform.localRotation = Quaternion.identity;
         visualRoot = go.transform;
+    }
+
+    // Public if you want to call it after SetTeam / swapping definition at runtime.
+    public void RefreshVisualsImmediate()
+    {
+        if (unit == null) unit = GetComponent<Unit>();
+        if (unit == null || unit.Definition == null) return;
+        if (unit.Definition.visualPrefab == null) return;
+#if UNITY_EDITOR
+        // Skip prefab assets in the Project window (persistent objects)
+        if (EditorUtility.IsPersistent(gameObject)) return;
+#endif
+
+        // 1) If we already have the right prefab instance, just re-apply team material.
+        // We'll detect it by storing the instance and also checking name.
+        // (Optional optimization, but helps avoid churn.)
+        if (visualInstance != null)
+        {
+            ApplyTeamMaterial();
+            return;
+        }
+
+        // 2) Cleanup any existing children under Visual (from previous runs)
+        CleanupVisualChildren();
+
+        // 3) Instantiate exactly ONE instance
+        visualInstance = Instantiate(unit.Definition.visualPrefab, visualRoot);
+        visualInstance.name = unit.Definition.visualPrefab.name; // remove "(Clone)" noise
+        visualInstance.transform.localPosition = Vector3.zero;
+        visualInstance.transform.localRotation = Quaternion.identity;
+        visualInstance.transform.localScale = Vector3.one;
+
+        ApplyTeamMaterial();
+    }
+
+    private void CleanupVisualChildren()
+    {
+        // If there are any existing visuals under VisualRoot, destroy them safely.
+        // This runs in editor via delayCall, so DestroyImmediate is safe here.
+        for (int i = visualRoot.childCount - 1; i >= 0; i--)
+        {
+            var child = visualRoot.GetChild(i).gameObject;
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                DestroyImmediate(child);
+            else
+                Destroy(child);
+#else
+            Destroy(child);
+#endif
+        }
+
+        visualInstance = null;
+    }
+
+    private void ApplyTeamMaterial()
+    {
+        if (unit == null || unit.Definition == null) return;
+
+        Material mat = unit.Team == Team.Player
+            ? unit.Definition.allyMaterial
+            : unit.Definition.enemyMaterial;
+
+        if (mat == null) return;
+
+        // If visualInstance got cleared somehow, attempt to find the first child as the visual.
+        if (visualInstance == null && visualRoot.childCount > 0)
+            visualInstance = visualRoot.GetChild(0).gameObject;
+
+        if (visualInstance == null) return;
+
+        foreach (var r in visualInstance.GetComponentsInChildren<Renderer>(true))
+            r.sharedMaterial = mat;
     }
 
     public Coroutine MoveAlongPath(List<Vector3> worldPoints)
