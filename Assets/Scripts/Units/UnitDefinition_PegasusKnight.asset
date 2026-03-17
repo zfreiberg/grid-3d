@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8232dc876984859418d10dbaf52ca4d1, type: 3}
+  m_Name: UnitDefinition_PegasusKnight
+  m_EditorClassIdentifier: Assembly-CSharp::UnitDefinition
+  displayName: Pegasus Knight
+  visualPrefab: {fileID: 4567890123456789012, guid: 71743bb87cbd8d7469427a63c941afd2, type: 3}
+  allyMaterial: {fileID: 2100000, guid: c697015e19e9a7049acb646ffa2e5320, type: 2}
+  enemyMaterial: {fileID: 2100000, guid: cf6d417555fbfed478e85c08e5185c2e, type: 2}
+  baseStats:
+    maxHP: 22
+    move: 8
+    str: 8
+    mag: 2
+    skill: 7
+    spd: 9
+    def: 6
+    res: 8
+    luck: 6
+    crit: 0
+    hit: 0
+    avoid: 0
+  moveType: 2
