@@ -45,7 +45,10 @@ public class PlayerInputController : MonoBehaviour
             {
                 if (TryRaycastUnit(out var unit))
                 {
-                    stateMachine.SelectUnit(unit);
+                    if (stateMachine.State == TacticalState.ChoosingAttack)
+                        stateMachine.ClickUnit(unit);
+                    else
+                        stateMachine.SelectUnit(unit);
                     return;
                 }
 

@@ -5,6 +5,7 @@ public class TileView : MonoBehaviour
     [SerializeField] private GameObject reachableHighlightObject;
     [SerializeField] private GameObject pathHighlightObject;
     [SerializeField] private GameObject hoverHighlightObject;
+    [SerializeField] private GameObject attackHighlightObject;
 
     public GridCoord Coord { get; private set; }
 
@@ -14,6 +15,7 @@ public class TileView : MonoBehaviour
         SetReachable(false);
         SetHover(false);
         SetPath(false);
+        SetAttackRange(false);
         name = $"Tile_{coord.x}_{coord.z}";
     }
 
@@ -33,5 +35,11 @@ public class TileView : MonoBehaviour
     {
         if (hoverHighlightObject != null)
             hoverHighlightObject.SetActive(on);
+    }
+
+    public void SetAttackRange(bool on)
+    {
+        if (attackHighlightObject != null)
+            attackHighlightObject.SetActive(on);
     }
 }

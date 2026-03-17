@@ -12,6 +12,7 @@ public struct UnitStats
     public int mag;
     public int skill;      // Dex
     public int spd;
+    public int attackRange; // Tiles reachable in attack (1 = melee, 2 = ranged, etc.)
 
     [Header("Defense")]
     public int def;

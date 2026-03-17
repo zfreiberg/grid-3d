@@ -6,7 +6,8 @@ public enum TacticalState
     Idle,
     UnitSelected,
     ChoosingMove,
-    Moving
+    Moving,
+    ChoosingAttack
 }
 
 public class TacticalStateMachine : MonoBehaviour
@@ -26,6 +27,9 @@ public class TacticalStateMachine : MonoBehaviour
     private HashSet<GridCoord> reachable = new();
     private Dictionary<GridCoord, GridCoord> cameFrom = new();
     private Dictionary<GridCoord, int> costSoFar = new();
+
+    // Attack selection data
+    private HashSet<GridCoord> attackable = new();
 
     void Start()
     {
@@ -145,6 +149,73 @@ public class TacticalStateMachine : MonoBehaviour
         // DeselectUnit();
     }
 
+    public void StartAttackSelection()
+    {
+        if (SelectedUnit == null) return;
+        moveCostTooltip.Hide();
+
+        int range = SelectedUnit.Stats.attackRange > 0 ? SelectedUnit.Stats.attackRange : 1;
+        attackable = ComputeAttackableTiles(SelectedUnit.currentCoord, range);
+
+        rangeHighlighter.ShowAttackRange(attackable);
+        State = TacticalState.ChoosingAttack;
+        actionMenu.Hide();
+    }
+
+    public void ClickUnit(Unit target)
+    {
+        if (State != TacticalState.ChoosingAttack) return;
+        if (target == null || target == SelectedUnit) return;
+        if (target.Team == SelectedUnit.Team) return;
+        if (!attackable.Contains(target.currentCoord)) return;
+
+        PerformAttack(SelectedUnit, target);
+        rangeHighlighter.ClearAttackRange();
+        Wait();
+    }
+
+    private void PerformAttack(Unit attacker, Unit target)
+    {
+        // Hit check: attacker hit% + skill vs target avoid + luck
+        int hitChance = Mathf.Clamp(
+            attacker.Stats.hit + attacker.Stats.skill - target.Stats.avoid - target.Stats.luck,
+            0, 100);
+        bool hit = Random.Range(0, 100) < hitChance;
+
+        if (!hit)
+        {
+            Debug.Log($"{attacker.name} attacks {target.name} — MISS!");
+            return;
+        }
+
+        // Damage: STR - DEF (minimum 0), tripled on crit
+        int damage = Mathf.Max(0, attacker.Stats.str - target.Stats.def);
+        bool crit = Random.Range(0, 100) < attacker.Stats.crit;
+        if (crit) damage *= 3;
+
+        string critText = crit ? " CRITICAL HIT!" : "";
+        Debug.Log($"{attacker.name} attacks {target.name} for {damage} damage!{critText}");
+        target.TakeDamage(damage);
+    }
+
+    private HashSet<GridCoord> ComputeAttackableTiles(GridCoord origin, int range)
+    {
+        var result = new HashSet<GridCoord>();
+        for (int dx = -range; dx <= range; dx++)
+        {
+            for (int dz = -range; dz <= range; dz++)
+            {
+                int dist = Mathf.Abs(dx) + Mathf.Abs(dz);
+                if (dist >= 1 && dist <= range)
+                {
+                    var coord = new GridCoord(origin.x + dx, origin.z + dz);
+                    if (grid.IsInBounds(coord)) result.Add(coord);
+                }
+            }
+        }
+        return result;
+    }
+
     public void Cancel()
     {
         if (State == TacticalState.ChoosingMove)
@@ -152,6 +223,12 @@ public class TacticalStateMachine : MonoBehaviour
             State = TacticalState.UnitSelected;
             rangeHighlighter.Clear();
             pathPreview.Clear();
+            actionMenu.ShowForUnit(SelectedUnit, this);
+        }
+        else if (State == TacticalState.ChoosingAttack)
+        {
+            State = TacticalState.UnitSelected;
+            rangeHighlighter.ClearAttackRange();
             actionMenu.ShowForUnit(SelectedUnit, this);
         }
         rangeHighlighter.ClearPath();

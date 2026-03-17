@@ -33,5 +33,6 @@ public class ActionMenuController : MonoBehaviour
     }
 
     public void OnMovePressed() => stateMachine.StartMoveSelection();
+    public void OnAttackPressed() => stateMachine.StartAttackSelection();
     public void OnWaitPressed() => stateMachine.Wait();
 }

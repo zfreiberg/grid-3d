@@ -7,6 +7,7 @@ public class RangeHighlighter : MonoBehaviour
 
     private readonly HashSet<GridCoord> reachable = new();
     private readonly HashSet<GridCoord> path = new();
+    private readonly HashSet<GridCoord> attackRange = new();
     private GridCoord? hover = null;
 
     public void Clear()
@@ -14,6 +15,7 @@ public class RangeHighlighter : MonoBehaviour
         ClearReachable();
         ClearPath();
         ClearHover();
+        ClearAttackRange();
     }
 
     public void ShowReachable(IEnumerable<GridCoord> coords)
@@ -76,6 +78,31 @@ public class RangeHighlighter : MonoBehaviour
     }
 
     public void ClearHover() => SetHover(null);
+
+    public void ShowAttackRange(IEnumerable<GridCoord> coords)
+    {
+        ClearAttackRange();
+
+        foreach (var c in coords)
+        {
+            var view = grid.GetTileView(c);
+            if (view != null)
+            {
+                view.SetAttackRange(true);
+                attackRange.Add(c);
+            }
+        }
+    }
+
+    public void ClearAttackRange()
+    {
+        foreach (var c in attackRange)
+        {
+            var view = grid.GetTileView(c);
+            if (view != null) view.SetAttackRange(false);
+        }
+        attackRange.Clear();
+    }
 
     private void ClearReachable()
     {

@@ -60,4 +60,16 @@ public class Unit : MonoBehaviour
 
     public void SetCoord(GridCoord coord) => currentCoord = coord;
     public void SetTeam(Team newTeam) => team = newTeam;
+
+    public void TakeDamage(int damage)
+    {
+        CurrentHP = Mathf.Max(0, CurrentHP - damage);
+        Debug.Log($"{name} takes {damage} damage — {CurrentHP}/{stats.maxHP} HP remaining.");
+
+        if (CurrentHP <= 0)
+        {
+            Debug.Log($"{name} has been defeated!");
+            gameObject.SetActive(false);
+        }
+    }
 }

@@ -23,10 +23,11 @@ MonoBehaviour:
     mag: 0
     skill: 5
     spd: 5
+    attackRange: 1
     def: 10
     res: 2
     luck: 5
-    crit: 0
-    hit: 0
+    crit: 10
+    hit: 100
     avoid: 0
   moveType: 0
