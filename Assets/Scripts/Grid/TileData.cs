@@ -6,6 +6,7 @@ public sealed class TileData
     public Vector3 WorldCenter { get; }
     public int BaseMoveCost { get; set; } = 1;
     public bool BlocksMovement { get; set; } = false;
+    public TileType TileType { get; set; } = TileType.Grass;
 
     public Unit Occupant { get; set; } = null;
 

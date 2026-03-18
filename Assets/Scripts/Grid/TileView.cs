@@ -9,14 +9,27 @@ public class TileView : MonoBehaviour
 
     public GridCoord Coord { get; private set; }
 
+    private MeshRenderer visualRenderer;
+
     public void Init(GridCoord coord)
     {
         Coord = coord;
+
+        var visual = transform.Find("Visual");
+        if (visual != null)
+            visualRenderer = visual.GetComponent<MeshRenderer>();
+
         SetReachable(false);
         SetHover(false);
         SetPath(false);
         SetAttackRange(false);
         name = $"Tile_{coord.x}_{coord.z}";
+    }
+
+    public void SetVisualMaterial(Material mat)
+    {
+        if (visualRenderer != null && mat != null)
+            visualRenderer.sharedMaterial = mat;
     }
 
     public void SetReachable(bool on)
