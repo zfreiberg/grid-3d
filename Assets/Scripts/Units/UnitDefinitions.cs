@@ -15,4 +15,8 @@ public class UnitDefinition : ScriptableObject
 
     [Header("Movement Type")]
     public MoveType moveType = MoveType.Walking;
+
+    [Header("Health Bar")]
+    [Tooltip("Extra vertical offset for the world-space health bar (adjust per model height).")]
+    public float healthBarOffset = 0f;
 }

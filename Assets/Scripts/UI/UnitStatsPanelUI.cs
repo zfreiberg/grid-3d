@@ -1,11 +1,13 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UnitStatsPanelUI : MonoBehaviour
 {
     [Header("Top")]
     [SerializeField] private TMP_Text classNameText;
     [SerializeField] private TMP_Text hpText;
+    [SerializeField] private Image hpBarFill;
 
     [Header("Stats")]
     [SerializeField] private TMP_Text moveText;
@@ -42,6 +44,14 @@ public class UnitStatsPanelUI : MonoBehaviour
 
         if (hpText != null)
             hpText.text = $"HP {unit.CurrentHP} / {s.maxHP}";
+
+        if (hpBarFill != null)
+        {
+            float fraction = s.maxHP > 0 ? (float)unit.CurrentHP / s.maxHP : 0f;
+            // Drive width via anchorMax so no sprite is needed on the Image
+            var rt = hpBarFill.rectTransform;
+            rt.anchorMax = new Vector2(fraction, rt.anchorMax.y);
+        }
 
         if (moveText != null)
             moveText.text = $"Move {s.move}";

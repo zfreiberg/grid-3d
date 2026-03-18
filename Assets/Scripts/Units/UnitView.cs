@@ -27,6 +27,9 @@ public class UnitView : MonoBehaviour
         unit = GetComponent<Unit>();
         EnsureVisualRoot();
         RefreshVisualsImmediate();
+
+        if (GetComponent<UnitHealthBar>() == null)
+            gameObject.AddComponent<UnitHealthBar>();
     }
 
 #if UNITY_EDITOR

@@ -31,3 +31,4 @@ MonoBehaviour:
     hit: 100
     avoid: 0
   moveType: 2
+  healthBarOffset: 0.2
