@@ -43,7 +43,7 @@ public class UnitStatsPanelUI : MonoBehaviour
         var s = unit.Stats;
 
         if (hpText != null)
-            hpText.text = $"HP {unit.CurrentHP} / {s.maxHP}";
+            hpText.text = $"Health {unit.CurrentHP} / {s.maxHP}";
 
         if (hpBarFill != null)
         {
