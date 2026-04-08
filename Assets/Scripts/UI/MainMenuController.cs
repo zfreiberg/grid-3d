@@ -6,7 +6,7 @@ public class MainMenuController : MonoBehaviour
 {
     void Start()
     {
-        Bind("StartButton",   () => SceneManager.LoadScene("GridScene01"));
+        Bind("StartButton",   OnStartClicked);
         Bind("OptionsButton", () => SceneManager.LoadScene("Options"));
         Bind("CreditsButton", () => SceneManager.LoadScene("Credits"));
         Bind("ExitButton",    OnExitClicked);
@@ -19,6 +19,18 @@ public class MainMenuController : MonoBehaviour
         var btn = go.GetComponent<Button>();
         if (btn == null) { Debug.LogWarning($"MainMenuController: '{goName}' has no Button."); return; }
         btn.onClick.AddListener(action);
+    }
+
+    void OnStartClicked()
+    {
+        // Tear down any existing run and start fresh
+        if (RunManager.Instance != null)
+            Destroy(RunManager.Instance.gameObject);
+
+        var go = new GameObject("RunManager");
+        var rm = go.AddComponent<RunManager>();
+        rm.StartNewRun(new MapSettings());
+        SceneManager.LoadScene("MapScene");
     }
 
     void OnExitClicked()
