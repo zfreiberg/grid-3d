@@ -16,9 +16,26 @@ public class MapController : MonoBehaviour
     const float MAP_HEIGHT    = 480f;
     const float HEADER_HEIGHT = 80f;
 
+    [SerializeField] MapVisualConfig visualConfig;
+
     TextMeshProUGUI actLabel;
     TextMeshProUGUI seedLabel;
     RectTransform   mapContent;
+
+    // Cached fallback — Unity's built-in Knob (circle) sprite
+    static Sprite KnobSprite => Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
+
+    Sprite NodeSprite(NodeType type) =>
+        (visualConfig != null ? visualConfig.GetNodeSprite(type) : null) ?? KnobSprite;
+
+    Sprite DotSprite() =>
+        (visualConfig != null && visualConfig.dotSprite != null ? visualConfig.dotSprite : null) ?? KnobSprite;
+
+    void ApplyMaterial(Image img)
+    {
+        if (visualConfig != null && visualConfig.defaultNodeMaterial != null)
+            img.material = visualConfig.defaultNodeMaterial;
+    }
 
     // -------------------------------------------------------------------------
 
@@ -161,15 +178,19 @@ public class MapController : MonoBehaviour
             glow.transform.SetParent(go.transform, false);
             glow.transform.SetAsFirstSibling();
             var glowImg = glow.AddComponent<Image>();
+            glowImg.sprite = NodeSprite(node.type);
             glowImg.color = new Color(1f, 1f, 1f, 0.25f);
             glowImg.raycastTarget = false;
+            ApplyMaterial(glowImg);
             var gr = glow.GetComponent<RectTransform>();
             gr.anchorMin = Vector2.zero; gr.anchorMax = Vector2.one;
             gr.offsetMin = new Vector2(-6, -6); gr.offsetMax = new Vector2(6, 6);
         }
 
         var img = go.AddComponent<Image>();
-        img.color = NodeColor(node.type, accessible, completed);
+        img.sprite = NodeSprite(node.type);
+        img.color  = NodeColor(node.type, accessible, completed);
+        ApplyMaterial(img);
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
@@ -219,8 +240,10 @@ public class MapController : MonoBehaviour
             var dotGO = new GameObject("Dot");
             dotGO.transform.SetParent(mapContent, false);
             var img  = dotGO.AddComponent<Image>();
-            img.color        = color;
+            img.sprite        = DotSprite();
+            img.color         = color;
             img.raycastTarget = false;
+            ApplyMaterial(img);
             var dr = dotGO.GetComponent<RectTransform>();
             dr.sizeDelta        = new Vector2(6f, 6f);
             dr.anchoredPosition = Vector2.Lerp(from, to, t);

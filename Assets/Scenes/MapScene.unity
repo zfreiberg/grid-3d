@@ -349,6 +349,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec9e746f4dccedf4dbc9624f08052a6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapController
+  visualConfig: {fileID: 11400000, guid: 3eb0c726d7053d346ad6b23c55baf8e0, type: 2}
 --- !u!1 &1383527001
 GameObject:
   m_ObjectHideFlags: 0
